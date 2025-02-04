@@ -49,10 +49,10 @@ func (controller *EditProductController) Execute(c *gin.Context) {
 	}
 
 	product := &domain.Product{
-		ID:     int32(id),
-		Name:   input.Name,
-		Price:  input.Price,
-		Amount: input.Amount,
+		Product_id: int32(id),
+		Name:       input.Name,
+		Price:      input.Price,
+		Amount:     input.Amount,
 	}
 
 	if err := controller.useCase.Run(product); err != nil {

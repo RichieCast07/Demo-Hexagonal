@@ -1,34 +1,77 @@
 package routes
 
 import (
-	//"demo/src/products/application_products"
-	//"demo/src/products/domain_products"
-	//"demo/src/products/infraestructure_products"
-	"demo/src/products/infraestructure_products/controllers"
+	"net/http"
+	"strconv"
 
+	"demo/src/products/domain_products"
+	infraestructure_products "demo/src/products/infraestructure_products"
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterProductRoutes(r *gin.Engine) {
-//	ps := infraestructure_products.NewCreateProductRepoMySQL()
+func RegisterProductRoutes(router *gin.Engine) {
 
-//	cpUseCase := application_products.NewCreateProductUseCase(ps)
-	cpController := controllers.NewCreateProductController(cpUseCase)
+	productRepo := infraestructure_products.NewCreateProductRepoMySQL()
 
-//	gapUseCase := application_products.NewGetProductAllUseCase(ps)
-	gapController := controllers.NewGetAllProductsController(gapUseCase)
-
-	//epUseCase := application_products.NewUpdateProductUseCase(ps)
-	epController := controllers.NewEditProductController(epUseCase)
-
-	//dpUseCase := application_products.NewDeleteProductUseCase(ps)
-	dpController := controllers.NewDeleteProductController(dpUseCase)
-
-	products := r.Group("/products")
+	products := router.Group("/products")
 	{
-		products.POST("/create", cpController.Execute)
-		products.GET("/", gapController.Execute)
-		products.PUT("/update/:id", epController.Execute)
-		products.DELETE("/delete/:id", dpController.Execute)
+		products.POST("/create", func(c *gin.Context) {
+			var product domain.Product
+			if err := c.ShouldBindJSON(&product); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+
+			if err := productRepo.Save(&product); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo guardar el producto"})
+				return
+			}
+			c.JSON(http.StatusCreated, gin.H{"message": "Producto creado con éxito"})
+		})
+
+		products.GET("/", func(c *gin.Context) {
+			productsList, err := productRepo.GetAll()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener productos"})
+				return
+			}
+			c.JSON(http.StatusOK, productsList)
+		})
+
+		products.PUT("/update/:id", func(c *gin.Context) {
+			idParam := c.Param("id")
+			id, err := strconv.Atoi(idParam)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+				return
+			}
+
+			var product domain.Product
+			if err := c.ShouldBindJSON(&product); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+
+			if err := productRepo.Edit(product.Name, product.Price, product.Amount, int32(id)); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar producto"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"message": "Producto actualizado con éxito"})
+		})
+
+		products.DELETE("/delete/:id", func(c *gin.Context) {
+			idParam := c.Param("id")
+			id, err := strconv.Atoi(idParam)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+				return
+			}
+
+			if err := productRepo.Delete(int32(id)); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar producto"})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"message": "Producto eliminado con éxito"})
+		})
 	}
 }

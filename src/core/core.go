@@ -3,12 +3,13 @@ package core
 import (
 	"database/sql"
 	"fmt"
-	_"os"
-	_"github.com/go-sql-driver/mysql"
+	_ "os"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
-type ConectionMySQL struct{
-	DB *sql.DB
+type ConectionMySQL struct {
+	DB  *sql.DB
 	Err string
 }
 
@@ -20,7 +21,7 @@ func MySQLConection() *ConectionMySQL {
 	//db_name := os.Getenv("DATABASE123")
 	//host := os.Getenv("HOST123")
 
-	dns := "root:Chup3nm33lRif10t3@tcp(127.0.0.1:3306)/hexagonal_db"
+	dns := "root:Rich07_Cast@tcp(127.0.0.1:3306)/tg1"
 
 	db, err := sql.Open("mysql", dns)
 
@@ -35,19 +36,18 @@ func MySQLConection() *ConectionMySQL {
 		error = fmt.Sprintf("Error al hacer ping en la BD:", err)
 	}
 
-	
 	fmt.Println("Corriendo servidor")
 
 	return &ConectionMySQL{DB: db, Err: error}
 }
 
-func(conection *ConectionMySQL) ExecPreparedQuerys(query string, values ...interface{})(sql.Result, error){
+func (conection *ConectionMySQL) ExecPreparedQuerys(query string, values ...interface{}) (sql.Result, error) {
 	stmt, err := conection.DB.Prepare(query)
 	if err != nil {
 		return nil, fmt.Errorf("Error al preparar la consulta", err)
 	}
 	defer stmt.Close()
-	
+
 	results, err := stmt.Exec(values...)
 	if err != nil {
 		return nil, fmt.Errorf("Error al realizar la consulta", err)
@@ -55,9 +55,9 @@ func(conection *ConectionMySQL) ExecPreparedQuerys(query string, values ...inter
 	return results, nil
 }
 
-func(conection ConectionMySQL) FetchRows(query string, values... interface{})(*sql.Rows, error){
+func (conection ConectionMySQL) FetchRows(query string, values ...interface{}) (*sql.Rows, error) {
 	rows, err := conection.DB.Query(query, values...)
-	if err != nil{
+	if err != nil {
 		return nil, fmt.Errorf("Erro al conseguir las filas afectadas")
 	}
 	return rows, nil
