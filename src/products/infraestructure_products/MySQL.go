@@ -1,9 +1,10 @@
 package infraestructureproducts
 
 import (
-	"log"
 	"demo/src/core"
 	domain "demo/src/products/domain_products"
+	"log"
+	"fmt"
 )
 
 type ProductRepoMySQL struct {
@@ -52,6 +53,28 @@ func (r *ProductRepoMySQL) GetAll() ([]domain.Product, error) {
 		return nil, err
 	}
 	return products, nil
+}
+
+
+func (r *ProductRepoMySQL) GetByID(id int32) (domain.Product, error) {
+	query := "SELECT product_id, name, price, amount FROM products WHERE product_id = ?"
+	rows, err := r.connection.FetchRows(query, id)
+	if err != nil {
+		log.Printf("Error al obtener producto: %v", err)
+		return domain.Product{}, err
+	}
+	defer rows.Close()
+
+	var product domain.Product
+	if rows.Next() {
+		if err := rows.Scan(&product.Product_id, &product.Name, &product.Price, &product.Amount); err != nil {
+			log.Printf("Error al escanear el producto: %v", err)
+			return product, err
+		}
+		return product, nil
+	}
+
+	return product, fmt.Errorf("producto con ID %d no encontrado", id)
 }
 
 func (r *ProductRepoMySQL) Edit(name string, price float32, amount float32, id int32) error {

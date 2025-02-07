@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"demo/src/products/domain_products"
+	domain "demo/src/products/domain_products"
 	infraestructure_products "demo/src/products/infraestructure_products"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,7 +16,7 @@ func RegisterProductRoutes(router *gin.Engine) {
 
 	products := router.Group("/products")
 	{
-		products.POST("/create", func(c *gin.Context) {
+		products.POST("/", func(c *gin.Context) {
 			var product domain.Product
 			if err := c.ShouldBindJSON(&product); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -38,7 +39,23 @@ func RegisterProductRoutes(router *gin.Engine) {
 			c.JSON(http.StatusOK, productsList)
 		})
 
-		products.PUT("/update/:id", func(c *gin.Context) {
+		products.GET("/:id", func(c *gin.Context) {
+			idParam := c.Param("id")
+			id, err := strconv.Atoi(idParam)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+				return
+			}
+
+			product, err := productRepo.GetByID(int32(id))
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener el producto"})
+				return
+			}
+			c.JSON(http.StatusOK, product)
+		})
+
+		products.PUT("/:id", func(c *gin.Context) {
 			idParam := c.Param("id")
 			id, err := strconv.Atoi(idParam)
 			if err != nil {
@@ -59,7 +76,7 @@ func RegisterProductRoutes(router *gin.Engine) {
 			c.JSON(http.StatusOK, gin.H{"message": "Producto actualizado con éxito"})
 		})
 
-		products.DELETE("/delete/:id", func(c *gin.Context) {
+		products.DELETE("/:id", func(c *gin.Context) {
 			idParam := c.Param("id")
 			id, err := strconv.Atoi(idParam)
 			if err != nil {
